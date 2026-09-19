@@ -42,7 +42,9 @@ powershell.exe -NoLogo -NoProfile -NonInteractive -STA -ExecutionPolicy Bypass -
 
 Each run creates `conversion_log_<timestamp>_<process-id>.txt` beside the PowerShell script. It records successful conversions with source and destination paths, existing-PDF skips, skipped directory links, scan errors, conversion errors, and cleanup errors. The final summary includes counts and the exit code.
 
-Exit code `0` means the scan completed without reported errors; existing-PDF and directory-link skips do not count as errors. Exit code `1` means a fatal error, a conversion failure, or a scan/cleanup issue occurred. If the log cannot be created, the script reports the error in the console and stops before converting files.
+The console shows conversion totals. Individual file, folder-access, and cleanup errors are recorded only in the log, so inaccessible folders do not flood the console. Fatal errors that stop the scan still appear in the console.
+
+Exit code `0` means the scan completed without reported errors; existing-PDF and directory-link skips do not count as errors. Exit code `2` means the scan completed with individual conversion or scan/cleanup issues; the launcher reports completion and points to the log. Exit code `1` means a fatal error stopped the run. If the log cannot be created, the script reports the error in the console and stops before converting files.
 
 The script checks Publisher's COM registration before loading interop assemblies or scanning the drive. If the log reports `Publisher.Application` is not registered (the original error was `80040154 Class not registered`), first run the converter normally, without **Run as administrator**. The previous launcher forced elevation; Publisher on this machine is Store-installed and successfully activates in the normal user session. If normal launch still fails, open Publisher to complete setup or install/repair Publisher. Having Office interop assemblies installed does not mean Publisher itself is installed.
 

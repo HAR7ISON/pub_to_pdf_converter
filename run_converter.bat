@@ -8,9 +8,11 @@ set "CONVERTER_EXIT_CODE=%ERRORLEVEL%"
 
 echo.
 if "%CONVERTER_EXIT_CODE%"=="0" (
-    echo Conversion scan completed. See the log beside this batch file.
+    echo Conversion scan completed. See the totals above.
+) else if "%CONVERTER_EXIT_CODE%"=="2" (
+    echo Conversion scan completed. See the totals above; additional details are in the log.
 ) else (
-    echo Conversion failed to start or reported errors. See console output and the log if created.
+    echo Conversion could not finish. See console output and the log if created.
 )
 pause
 exit /b %CONVERTER_EXIT_CODE%

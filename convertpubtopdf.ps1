@@ -19,9 +19,9 @@ $issueCount = 0
 $exitCode = 0
 
 function Write-Log {
-    param([string]$Level, [string]$Message)
+    param([string]$Level, [string]$Message, [switch]$LogOnly)
     $line = '[{0}] [{1}] {2}' -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Level, $Message
-    Write-Host $line
+    if (-not $LogOnly -and $Level -ne 'ERROR') { Write-Host $line }
     $script:log.WriteLine($line)
 }
 
@@ -105,7 +105,7 @@ try {
             } catch {
                 $failureCount++
                 Write-Log 'ERROR' "Conversion failed for '$sourcePath' -> '$pdfPath': $_"
-                Write-Log 'INFO' 'If the export left a partial PDF, review and remove it before retrying; existing PDFs are skipped.'
+                Write-Log 'INFO' 'If the export left a partial PDF, review and remove it before retrying; existing PDFs are skipped.' -LogOnly
             } finally {
                 if ($null -ne $doc) {
                     try {
@@ -140,9 +140,11 @@ try {
         }
     }
     if ($locationPushed) { Pop-Location }
-    if ($failureCount -gt 0 -or $issueCount -gt 0) { $exitCode = 1 }
+    # A completed scan with individual issues is different from a fatal stop.
+    if ($exitCode -eq 0 -and ($failureCount -gt 0 -or $issueCount -gt 0)) { $exitCode = 2 }
     if ($null -ne $log) {
-        Write-Log 'SUMMARY' "Found: $foundCount; converted: $successCount; existing PDFs skipped: $skipCount; failed conversions: $failureCount; scan/cleanup issues: $issueCount; exit code: $exitCode."
+        Write-Log 'SUMMARY' "Found: $foundCount; converted: $successCount; existing PDFs skipped: $skipCount; failed conversions: $failureCount; scan/cleanup issues: $issueCount; exit code: $exitCode." -LogOnly
+        Write-Host "Converted: $successCount; existing PDFs skipped: $skipCount; not converted: $failureCount."
         $log.Dispose()
     }
 }
