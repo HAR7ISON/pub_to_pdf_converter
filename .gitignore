@@ -1,0 +1,14 @@
+# Generated conversion logs
+conversion_log_*.txt
+
+# Local editor settings and temporary files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Operating system metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
