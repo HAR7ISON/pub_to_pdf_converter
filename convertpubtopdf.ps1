@@ -4,7 +4,7 @@ Set-Variable -Name DriveRoot -Value 'C:\' -Option Constant
 # Requires Windows and an installed copy of Microsoft Publisher.
 # Always scans the entire drive recursively, including hidden/system entries.
 # PDFs are saved beside their source .pub files; existing PDFs are skipped.
-# Logs are saved beside this script. Run as administrator for broader access;
+# Logs are saved beside this script. Run in your normal Windows user session;
 # protected folders that remain inaccessible are recorded in the log.
 $ErrorActionPreference = 'Stop'
 $logPath = Join-Path $PSScriptRoot ("conversion_log_{0}_{1}.txt" -f (Get-Date -Format 'yyyyMMdd_HHmmss_fff'), $PID)
@@ -29,17 +29,33 @@ try {
     # Fail before converting anything if the log cannot be created.
     $log = [System.IO.StreamWriter]::new($logPath, $false, [System.Text.Encoding]::UTF8)
     $log.AutoFlush = $true
-    Write-Log 'START' "Scanning $DriveRoot recursively. Log: $logPath"
+    Write-Log 'START' "Checking conversion prerequisites. Log: $logPath"
 
     if ($DriveRoot -notmatch '^[A-Za-z]:\\$') {
         throw "DriveRoot must be a drive root such as C:\ or D:\."
     }
+    # Interop assemblies alone do not install Publisher or register its COM server.
+    # Check the application first so missing Publisher produces an actionable error.
+    $publisherType = [System.Type]::GetTypeFromProgID('Publisher.Application')
+    if ($null -eq $publisherType -or $publisherType.GUID -eq [Guid]::Empty) {
+        throw 'Microsoft Publisher is not registered in this Windows session (Publisher.Application). Run the converter normally, without Run as administrator: Store-installed Publisher may be unavailable in an elevated session. If it still fails, open Publisher once to complete setup, or install/repair Publisher. Office/Publisher interop assemblies alone cannot convert .pub files.'
+    }
+
+    try {
+        Add-Type -AssemblyName Office
+        Add-Type -AssemblyName Microsoft.Office.Interop.Publisher
+    } catch {
+        throw "Publisher interop assemblies could not load. Repair the Publisher/Office installation with its .NET programmability support. Details: $($_.Exception.Message)"
+    }
+    try {
+        $app = New-Object -ComObject Publisher.Application
+    } catch {
+        throw "Microsoft Publisher could not start. Run the converter without Run as administrator, especially with Store-installed Publisher. Open Publisher manually to complete setup, then retry; repair its Office installation if necessary. Details: $($_.Exception.Message)"
+    }
+
     Push-Location -LiteralPath $DriveRoot
     $locationPushed = $true
-
-    Add-Type -AssemblyName Office
-    Add-Type -AssemblyName Microsoft.Office.Interop.Publisher
-    $app = New-Object -ComObject Publisher.Application
+    Write-Log 'INFO' "Scanning $DriveRoot recursively."
 
     # Walk one directory at a time so an inaccessible folder does not stop
     # other folders from being scanned or require storing the entire drive.
@@ -108,7 +124,7 @@ try {
 } catch {
     $exitCode = 1
     if ($null -ne $log) {
-        Write-Log 'FATAL' "Scan stopped: $_"
+        Write-Log 'FATAL' "Conversion stopped: $_"
     } else {
         Write-Host "Cannot create log '$logPath': $_" -ForegroundColor Red
     }

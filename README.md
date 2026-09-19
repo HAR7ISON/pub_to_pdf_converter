@@ -18,12 +18,12 @@ Converts Microsoft Publisher (`.pub`) files to PDFs by recursively scanning an e
    Set-Variable -Name DriveRoot -Value 'C:\' -Option Constant
    ```
 
-3. Double-click `run_converter.bat` and approve the Windows UAC prompt to run the converter as administrator. If the launcher is already elevated, no additional prompt is needed. Cancelling the prompt stops the launch.
+3. Double-click `run_converter.bat` in your normal Windows user session. The launcher does not request administrator privileges. Avoid **Run as administrator**, especially with Store-installed Publisher, which may not be available to an elevated process.
 4. Wait for the completion message, then check the log beside the scripts. The launcher pauses so you can read its output.
 
 The script switches its working directory to the configured drive root. You can launch the batch file from any folder. Scanning a whole drive can take a long time.
 
-To run directly without the batch file's pause, open a command prompt as administrator and run (this direct command does not request elevation itself):
+To run directly without the batch file's pause, open a normal command prompt and run:
 
 ```bat
 powershell.exe -NoLogo -NoProfile -NonInteractive -STA -ExecutionPolicy Bypass -File "C:\path\to\convertpubtopdf.ps1"
@@ -44,6 +44,8 @@ Each run creates `conversion_log_<timestamp>_<process-id>.txt` beside the PowerS
 
 Exit code `0` means the scan completed without reported errors; existing-PDF and directory-link skips do not count as errors. Exit code `1` means a fatal error, a conversion failure, or a scan/cleanup issue occurred. If the log cannot be created, the script reports the error in the console and stops before converting files.
 
-If Publisher or its interop assemblies cannot load, verify the Publisher installation. For access errors, check folder permissions or rerun as administrator. If a failed export leaves a partial PDF, review and remove that partial file before retrying: any existing PDF is skipped on subsequent runs.
+The script checks Publisher's COM registration before loading interop assemblies or scanning the drive. If the log reports `Publisher.Application` is not registered (the original error was `80040154 Class not registered`), first run the converter normally, without **Run as administrator**. The previous launcher forced elevation; Publisher on this machine is Store-installed and successfully activates in the normal user session. If normal launch still fails, open Publisher to complete setup or install/repair Publisher. Having Office interop assemblies installed does not mean Publisher itself is installed.
 
-Windows/Publisher execution has not been verified in the macOS development environment.
+If Publisher is registered but cannot start, open it manually to complete setup and repair its installation if needed. If the interop assemblies cannot load, repair the Publisher/Office installation with .NET programmability support. For access errors, check folder permissions; protected folders are logged and scanning continues. If a failed export leaves a partial PDF, review and remove that partial file before retrying: any existing PDF is skipped on subsequent runs.
+
+Verified on Windows: PowerShell syntax, Publisher COM startup, and PDF export of a new blank Publisher document. A full-drive conversion scan was not run during verification.
