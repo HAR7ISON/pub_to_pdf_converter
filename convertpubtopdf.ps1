@@ -144,7 +144,7 @@ try {
     if ($exitCode -eq 0 -and ($failureCount -gt 0 -or $issueCount -gt 0)) { $exitCode = 2 }
     if ($null -ne $log) {
         Write-Log 'SUMMARY' "Found: $foundCount; converted: $successCount; existing PDFs skipped: $skipCount; failed conversions: $failureCount; scan/cleanup issues: $issueCount; exit code: $exitCode." -LogOnly
-        Write-Host "Converted: $successCount; existing PDFs skipped: $skipCount; not converted: $failureCount."
+        Write-Host "Successful conversions: $successCount. See log file for additional details."
         $log.Dispose()
     }
 }
